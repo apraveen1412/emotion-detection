@@ -1,0 +1,177 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+
+body {
+  background-color: #f3f4f6;
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  color: #1f2937;
+}
+
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+.auth-container {
+  align-items: center;
+  background: linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%);
+}
+
+.card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  padding: 40px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.logo-header { font-size: 3rem; margin-bottom: 10px; }
+
+.auth-card input {
+  width: 100%;
+  padding: 12px 15px;
+  margin-bottom: 15px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 16px;
+  box-sizing: border-box;
+  transition: border 0.2s;
+}
+
+.auth-card input:focus {
+  border-color: #4f46e5;
+  outline: none;
+}
+
+.full-width { width: 100%; margin-top: 10px; }
+
+.toggle-text {
+  margin-top: 20px;
+  color: #4f46e5;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.error-msg {
+  color: #ef4444;
+  font-size: 14px;
+  margin-top: 10px;
+  background: #fee2e2;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+/* Main App Styles */
+.main-card {
+  background: white;
+  width: 100%;
+  max-width: 800px;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
+
+.user-badge { color: #6b7280; margin: 0; font-size: 0.9rem; }
+
+.input-section textarea {
+  width: 100%;
+  height: 120px;
+  border: 2px solid #eef2f6;
+  border-radius: 12px;
+  padding: 15px;
+  resize: none;
+  font-size: 16px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.input-section textarea:focus { border-color: #4f46e5; outline: none; }
+
+.controls {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  justify-content: flex-end;
+}
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: #a5a6f6;
+  font-weight: 600;
+  color: #374151;
+  transition: all 0.2s;
+}
+
+.icon-btn:hover { background: #9798f7; }
+.icon-btn.recording { background: #ed3131; color: white; animation: pulse 1.5s infinite; }
+
+.primary-btn {
+  background: #4f46e5;
+  color: white;
+  padding: 10px 25px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+
+.primary-btn:hover { background: #4338ca; }
+.primary-btn:disabled { background: #a5a6f6; cursor: not-allowed; }
+
+.result-section {
+  margin-top: 30px;
+  background: #fafafa;
+  padding: 20px;
+  border-radius: 12px;
+  animation: fadeIn 0.5s ease;
+}
+
+.emotion-badge { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
+.emotion-badge h2 { margin: 0; font-size: 1.8rem; letter-spacing: 1px; }
+.confidence-pill { background: #e5e7eb; padding: 4px 8px; border-radius: 20px; font-size: 0.8rem; color: #374151; }
+
+.transcription { font-style: italic; color: #6b7280; margin-bottom: 15px; }
+
+.insight-box {
+  background: #ecfdf5;
+  border: 1px solid #bbf7d0;
+  padding: 15px;
+  border-radius: 10px;
+  color: #166534;
+}
+
+.history-section { margin-top: 40px; border-top: 1px solid #f3f4f6; padding-top: 20px; }
+.chart-container { height: 250px; margin-top: 20px; }
+.legend { display: flex; gap: 15px; justify-content: center; margin-top: 15px; font-size: 0.85rem; flex-wrap: wrap;}
+.legend-hint { font-size: 0.8rem; color: #9ca3af; margin-bottom: 0; }
+
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }

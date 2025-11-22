@@ -1,0 +1,15 @@
+fastapi
+uvicorn 
+python-multipart 
+sqlmodel 
+sqlalchemy 
+python-jose[cryptography] 
+passlib 
+bcrypt==3.2.0 
+cryptography 
+pydantic[email] 
+email-validator 
+transformers 
+torch 
+openai-whisper 
+numpy
