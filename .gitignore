@@ -1,0 +1,18 @@
+# Google OAuth
+backend/auth/client_secret.json
+backend/auth/token.json
+
+# Python
+__pycache__/
+*.pyc
+.env
+myenv/
+
+# ML models
+backend/model/
+
+# database
+journal.db
+
+# node modules
+frontend/node_modules/
