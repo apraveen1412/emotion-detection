@@ -1,233 +1,283 @@
-import React, { useState, useEffect } from 'react';
-import { Mic, Send, BookOpen, Activity, LogOut, Lock } from 'lucide-react';
-import { Line } from 'react-chartjs-2';
-import 'chart.js/auto';
-import './App.css';
+import React, { useState, useEffect } from "react";
+import { Mic, Send, LogOut } from "lucide-react";
+import "./App.css";
 
-// Plutchik's Wheel inspired colors
+import EmotionTimeline from "./components/EmotionTimeline";
+import ReportDownload from "./components/ReportDownload";
+
+/* -------------------- EMOTION COLORS -------------------- */
 const EMOTION_COLORS = {
-  joy: '#FFD700', excitement: '#FFC107', amusement: '#FFB300', optimism: '#FF9800',
-  gratitude: '#4CAF50', relief: '#8BC34A', admiration: '#CDDC39', caring: '#66BB6A',
-  anger: '#F44336', annoyance: '#E91E63', fear: '#9C27B0', nervousness: '#BA68C8',
-  sadness: '#2196F3', grief: '#3F51B5', disappointment: '#5C6BC0', remorse: '#7986CB',
-  neutral: '#9E9E9E', surprise: '#00BCD4', curiosity: '#009688', confusion: '#607D8B'
+  joy: "#FFD166",
+  amusement: "#FFC857",
+  excitement: "#FF9F1C",
+  gratitude: "#6BCF63",
+  love: "#F77F9A",
+  admiration: "#4ECDC4",
+  pride: "#5BC0EB",
+  optimism: "#A7E163",
+  relief: "#9AE6B4",
+
+  anger: "#D62828",
+  annoyance: "#E76F51",
+  disgust: "#6A994E",
+  fear: "#5A189A",
+  nervousness: "#7B2CBF",
+
+  sadness: "#457B9D",
+  grief: "#2C3E50",
+  disappointment: "#6C757D",
+  remorse: "#5F6CAF",
+  embarrassment: "#B56576",
+
+  confusion: "#8D99AE",
+  curiosity: "#48CAE4",
+  realization: "#4D96FF",
+  surprise: "#56CFE1",
+  neutral: "#ADB5BD",
+
+  caring: "#52B788",
+  approval: "#74C69D",
+  disapproval: "#8B0000",
+  desire: "#FF758F",
 };
 
-const getColor = (emotion) => EMOTION_COLORS[emotion] || '#9E9E9E';
+const getColor = (emotion) => EMOTION_COLORS[emotion] || "#9E9E9E";
+
+/* ======================================================= */
 
 function App() {
-  const [token, setToken] = useState(localStorage.getItem('token'));
-  
-  // Auth State
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
-  const [authError, setAuthError] = useState('');
+  /* ---------- AUTH STATE ---------- */
+  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [displayName, setDisplayName] = useState("");
 
-  // App State
-  const [text, setText] = useState('');
+  const [authMode, setAuthMode] = useState("login");
+  const [identifier, setIdentifier] = useState(""); // username OR email
+  const [email, setEmail] = useState(""); // signup only
+  const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+
+  /* ---------- APP STATE ---------- */
+  const [text, setText] = useState("");
   const [result, setResult] = useState(null);
+  const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
+
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
-  const [history, setHistory] = useState([]);
+
+  /* ======================================================= */
 
   useEffect(() => {
-    if (token) fetchHistory();
+    if (token) fetchTimeline();
   }, [token]);
 
+  /* -------------------- AUTH -------------------- */
+
   const logout = () => {
-    localStorage.removeItem('token');
+    localStorage.clear();
     setToken(null);
+    setDisplayName("");
     setHistory([]);
     setResult(null);
-    setUsername('');
-    setPassword('');
-    setEmail('');
   };
 
-  // Helper function to perform login
-  const performLogin = async () => {
+  const login = async () => {
     const formData = new URLSearchParams();
-    formData.append('username', username);
-    formData.append('password', password);
+    formData.append("username", identifier);
+    formData.append("password", password);
 
-    const res = await fetch('http://localhost:8000/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formData
+    const res = await fetch("http://localhost:8000/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formData,
     });
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Login failed');
+    if (!res.ok) throw new Error(data.detail || "Login failed");
 
-    localStorage.setItem('token', data.access_token);
+    localStorage.setItem("token", data.access_token);
     setToken(data.access_token);
-    setAuthError('');
+    setDisplayName(identifier);
   };
 
   const handleAuth = async (e) => {
     e.preventDefault();
-    setAuthError('');
-    
+    setAuthError("");
+
     try {
-      if (authMode === 'signup') {
-        // 1. Attempt Signup
-        const res = await fetch('http://localhost:8000/signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, email, password })
+      if (authMode === "signup") {
+        const res = await fetch("http://localhost:8000/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: identifier,
+            email: email,
+            password: password,
+          }),
         });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Signup failed');
-
-        // 2. If Signup successful, Auto-Login immediately
-        await performLogin(); 
-
-      } else {
-        // Login Mode
-        await performLogin();
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.detail || "Signup failed");
+        }
       }
+
+      await login();
     } catch (err) {
       setAuthError(err.message);
     }
   };
 
-  const fetchHistory = async () => {
+  /* -------------------- TIMELINE -------------------- */
+
+  const fetchTimeline = async () => {
     try {
-      const res = await fetch('http://localhost:8000/history', {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const res = await fetch("http://localhost:8000/timeline", {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.status === 401) logout();
+
+      if (res.status === 401) {
+        logout();
+        return;
+      }
+
       const data = await res.json();
-      setHistory(data);
-    } catch (e) { console.error(e); }
+      setHistory(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Timeline fetch error:", err);
+      setHistory([]);
+    }
   };
+
+  /* -------------------- ANALYSIS -------------------- */
 
   const handleAnalyze = async (audioBlob = null) => {
     setLoading(true);
-    const date = new Date().toISOString().split('T')[0];
     const formData = new FormData();
-    formData.append('date', date);
+    formData.append("date", new Date().toISOString().split("T")[0]);
 
-    let url = 'http://localhost:8000/analyze-text';
+    let url = "http://localhost:8000/analyze-text";
+
     if (audioBlob) {
-      formData.append('file', audioBlob, 'recording.webm');
-      url = 'http://localhost:8000/analyze-audio';
+      formData.append("file", audioBlob, "voice.webm");
+      url = "http://localhost:8000/analyze-audio";
     } else {
-      formData.append('text', text);
+      formData.append("text", text);
     }
 
     try {
-      const response = await fetch(url, { 
-        method: 'POST', 
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData 
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
       });
-      
-      if (response.status === 401) { logout(); return; }
-      
-      const data = await response.json();
+
+      if (res.status === 401) {
+        logout();
+        return;
+      }
+
+      const data = await res.json();
       setResult(data);
-      fetchHistory(); 
+      setText("");
+      fetchTimeline();
     } catch (err) {
-      console.error(err);
-      alert("Analysis failed. Is the backend running?");
+      console.error("Analysis failed:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  /* -------------------- AUDIO -------------------- */
+
   const startRecording = async () => {
-    if (!navigator.mediaDevices) return alert("No mic access");
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const recorder = new MediaRecorder(stream);
     const chunks = [];
-    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+
+    recorder.ondataavailable = (e) => chunks.push(e.data);
     recorder.onstop = () => {
-      const blob = new Blob(chunks, { type: 'audio/webm' });
-      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(chunks, { type: "audio/webm" });
+      stream.getTracks().forEach((t) => t.stop());
       handleAnalyze(blob);
     };
+
     recorder.start();
     setMediaRecorder(recorder);
     setIsRecording(true);
   };
 
   const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state === "recording") {
+    if (mediaRecorder) {
       mediaRecorder.stop();
       setIsRecording(false);
     }
   };
 
-  // Graph Visualization
-  const chartData = {
-    labels: history.map(h => h.date),
-    datasets: [{
-      label: 'Emotion Timeline',
-      // We map everything to a flat line (5) because the COLOR is the variable
-      data: history.map(h => 5), 
-      fill: false,
-      borderColor: '#e5e7eb',
-      borderWidth: 2,
-      pointBackgroundColor: history.map(h => getColor(h.emotion)),
-      pointRadius: 8,
-      pointHoverRadius: 12,
-    }]
-  };
+  /* ===================== AUTH UI ===================== */
 
-  // --- RENDER ---
-  
   if (!token) {
     return (
       <div className="app-container auth-container">
         <div className="card auth-card">
           <div className="logo-header">🧠</div>
-          <h1>MindJournal Safe</h1>
-          <p>{authMode === 'login' ? 'Secure Login' : 'Create Private Profile'}</p>
-          
+          <h1>MindJournal</h1>
+          <p>
+            {authMode === "login"
+              ? "Login with Username or Email"
+              : "Create Account"}
+          </p>
+
           <form onSubmit={handleAuth}>
-            <input 
-              type="text" placeholder="Username" 
-              value={username} onChange={e => setUsername(e.target.value)} 
-              required 
+            <input
+              type="text"
+              placeholder="Username"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              required
             />
-            
-            {authMode === 'signup' && (
-              <input 
-                type="email" placeholder="Email Address" 
-                value={email} onChange={e => setEmail(e.target.value)} 
-                required 
+
+            {authMode === "signup" && (
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
               />
             )}
 
-            <input 
-              type="password" placeholder="Password" 
-              value={password} onChange={e => setPassword(e.target.value)} 
-              required 
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
             />
-            
+
             <button type="submit" className="primary-btn full-width">
-              {authMode === 'login' ? 'Log In' : 'Sign Up'}
+              {authMode === "login" ? "Log In" : "Sign Up"}
             </button>
           </form>
 
           {authError && <div className="error-msg">{authError}</div>}
-          
-          <p className="toggle-text" onClick={() => {
-            setAuthMode(authMode === 'login' ? 'signup' : 'login');
-            setAuthError('');
-            setEmail('');
-          }}>
-            {authMode === 'login' ? "New here? Create Account" : "Have an account? Log In"}
+
+          <p
+            className="toggle-text"
+            onClick={() =>
+              setAuthMode(authMode === "login" ? "signup" : "login")
+            }
+          >
+            {authMode === "login"
+              ? "New here? Create Account"
+              : "Have an account? Log In"}
           </p>
         </div>
       </div>
     );
   }
+
+  /* ===================== MAIN UI ===================== */
 
   return (
     <div className="app-container">
@@ -235,69 +285,89 @@ function App() {
         <header className="app-header">
           <div>
             <h1>🧠 MindJournal</h1>
-            <p className="user-badge">Logged in as: <strong>{username}</strong></p>
+            <p className="user-badge">Logged in as {displayName}</p>
           </div>
-          <button onClick={logout} className="icon-btn logout-btn" title="Logout">
-            <LogOut size={18}/> Logout
+          <button onClick={logout} className="icon-btn logout-btn">
+            <LogOut size={18} /> Logout
           </button>
         </header>
 
+        {/* INPUT SECTION */}
         <div className="input-section">
-          <textarea 
-            value={text} 
+          <textarea
+            value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="How was your day? Type here or record your voice..."
+            placeholder="How was your day? Type or record..."
           />
+
           <div className="controls">
-            <button 
-              className={`icon-btn ${isRecording ? 'recording' : ''}`} 
+            <button
+              className={`icon-btn ${isRecording ? "recording" : ""}`}
               onClick={isRecording ? stopRecording : startRecording}
             >
-              <Mic /> {isRecording ? 'Stop' : 'Record Voice'}
+              <Mic /> {isRecording ? "Stop" : "Record"}
             </button>
-            <button 
-              className="primary-btn" 
-              onClick={() => handleAnalyze()} 
+
+            <button
+              className="primary-btn"
+              onClick={() => handleAnalyze()}
               disabled={loading || (!text && !isRecording)}
             >
-              {loading ? 'Analyzing...' : 'Analyze Entry'} <Send size={16} />
+              {loading ? "Analyzing..." : "Analyze"} <Send size={16} />
             </button>
           </div>
         </div>
 
-        {result && (
-          <div className="result-section" style={{borderLeft: `6px solid ${getColor(result.emotion)}`}}>
-            <div className="emotion-badge">
-              <h2 style={{color: getColor(result.emotion)}}>{result.emotion.toUpperCase()}</h2>
-              <span className="confidence-pill">{result.score}% Confidence</span>
-            </div>
-            {result.transcription && <div className="transcription"><strong>You said:</strong> "{result.transcription}"</div>}
-            <div className="insight-box">
-              <h3><BookOpen size={18}/> Scientific Insight</h3>
-              <p>{result.insight}</p>
-            </div>
+        {/* RESULT */}
+        {result?.emotions && (
+          <div
+            className="result-section"
+            style={{
+              borderLeft: `6px solid ${
+                result.emotions[0]
+                  ? getColor(result.emotions[0])
+                  : "#9E9E9E"
+              }`,
+            }}
+          >
+            <h2>
+              {result.emotions.map((emo, idx) => (
+                <span
+                  key={emo}
+                  style={{
+                    color: getColor(emo),
+                    marginRight: "6px",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {emo}
+                  {idx < result.emotions.length - 1 ? "," : ""}
+                </span>
+              ))}
+            </h2>
+
+            {result.suggestion && (
+              <div className="suggestion-box">
+                <strong>Suggested Action</strong>
+                <p>{result.suggestion}</p>
+              </div>
+            )}
           </div>
         )}
 
+        {/* TIMELINE + REPORT */}
         <div className="history-section">
-          <h3><Activity size={18}/> Emotional Journey (90 Days)</h3>
-          <p className="legend-hint">Colors represent different emotions based on Plutchik's Wheel</p>
-          <div className="chart-container">
-            <Line 
-              data={chartData} 
-              options={{ 
-                maintainAspectRatio: false,
-                scales: { y: { display: false }, x: { grid: { display: false } } },
-                plugins: { tooltip: { callbacks: { label: (ctx) => `Emotion: ${history[ctx.dataIndex].emotion}` } } }
-              }} 
-            />
+          <div className="history-header">
+            <h3>📊 Emotional Journey</h3>
+            <ReportDownload token={token} />
           </div>
-          <div className="legend">
-             <span style={{color: EMOTION_COLORS.joy}}>● Joy</span>
-             <span style={{color: EMOTION_COLORS.anger}}>● Anger</span>
-             <span style={{color: EMOTION_COLORS.sadness}}>● Sadness</span>
-             <span style={{color: EMOTION_COLORS.fear}}>● Fear</span>
-             <span style={{color: EMOTION_COLORS.neutral}}>● Neutral</span>
+
+          <p className="legend-hint">
+            Timeline shows when emotions occurred over time
+          </p>
+
+          <div className="chart-container">
+            <EmotionTimeline history={history} />
           </div>
         </div>
       </div>

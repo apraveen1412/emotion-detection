@@ -173,5 +173,82 @@ body {
 .legend { display: flex; gap: 15px; justify-content: center; margin-top: 15px; font-size: 0.85rem; flex-wrap: wrap;}
 .legend-hint { font-size: 0.8rem; color: #9ca3af; margin-bottom: 0; }
 
+/* ---------- Emotional Journey Header ---------- */
+
+.history-header {
+  display: flex;
+  align-items: center;          /* vertical alignment */
+  justify-content: space-between; /* left + right */
+  margin-bottom: 8px;
+}
+
+.history-header h3 {
+  margin: 0;                    /* remove default spacing */
+  font-size: 1.1rem;
+}
+
+
+/* ---------- Report Download (Transparent Dropdown) ---------- */
+
+.download-icon-btn {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  color: #6b7280; /* subtle gray */
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.download-icon-btn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.report-dropdown {
+  position: relative;
+}
+
+/* Dropdown menu styling */
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 36px;
+  min-width: 140px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  z-index: 20;
+  overflow: hidden;
+  animation: dropdownFade 0.15s ease-out;
+}
+
+/* Dropdown items */
+.dropdown-menu div {
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.dropdown-menu div:hover {
+  background: #f9fafb;
+}
+
+/* Subtle dropdown animation */
+@keyframes dropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
 @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
