@@ -1,0 +1,36 @@
+.report-dropdown {
+  position: relative;
+}
+
+.download-icon-btn {
+  border: 1px solid #e5e7eb;
+  background: white;
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+}
+
+.download-icon-btn:hover {
+  background: #f3f4f6;
+}
+
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 36px;
+  background: rgb(245, 245, 245);
+  border: 1px solid rgb(169 169 169);
+  border-radius: 8px;
+  overflow: hidden;
+  width: 140px;
+}
+
+.dropdown-menu div {
+  padding: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.dropdown-menu div:hover {
+  background: #e6e6e6;
+}

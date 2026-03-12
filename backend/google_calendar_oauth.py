@@ -27,29 +27,20 @@ def get_calendar_service():
     Returns an authenticated Google Calendar service.
     OAuth flow runs ONLY the first time.
     """
-
     creds = None
 
-    # Load existing credentials if available
     if os.path.exists(TOKEN_FILE):
-        creds = Credentials.from_authorized_user_file(
-            TOKEN_FILE, SCOPES
-        )
+        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
 
-    # Refresh or create credentials if needed
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            # Refresh silently
             creds.refresh(Request())
         else:
-            # First-time OAuth flow (one-time manual step)
             flow = InstalledAppFlow.from_client_secrets_file(
-                CLIENT_SECRET_FILE,
-                SCOPES
+                CLIENT_SECRET_FILE, SCOPES
             )
             creds = flow.run_local_server(port=8080)
 
-        # Save credentials for future use
         os.makedirs(os.path.dirname(TOKEN_FILE), exist_ok=True)
         with open(TOKEN_FILE, "w") as token:
             token.write(creds.to_json())
@@ -61,14 +52,17 @@ def get_calendar_service():
 # EVENT CREATION
 # ==================================================
 
-def create_calendar_event(summary, description):
+def create_calendar_event(summary, description, scheduled_time=None):
     """
-    Creates a Google Calendar event 10 minutes from now.
+    Creates a Google Calendar event. Uses user-provided scheduled_time or defaults to 10 mins from now.
     """
-
     service = get_calendar_service()
 
-    start_time = datetime.datetime.now() + datetime.timedelta(minutes=10)
+    if scheduled_time:
+        start_time = scheduled_time
+    else:
+        start_time = datetime.datetime.now() + datetime.timedelta(minutes=10)
+        
     end_time = start_time + datetime.timedelta(minutes=30)
 
     event = {
