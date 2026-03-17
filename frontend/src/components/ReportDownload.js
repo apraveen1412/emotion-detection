@@ -5,13 +5,16 @@ import "./ReportDownload.css";
 function ReportDownload({ token }) {
   const [open, setOpen] = useState(false);
 
+  // FIX: was a single boolean — all three buttons showed "Downloading..."
+  // together. Now tracks WHICH range is loading so only that button updates.
+  const [loadingRange, setLoadingRange] = useState(null);
+
   const downloadReport = async (range) => {
+    setLoadingRange(range);
     try {
       const res = await fetch(
-        `http://localhost:8000/report/csv?range=${range}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        `http://localhost:8000/report/excel?range=${range}`,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (!res.ok) {
@@ -21,37 +24,57 @@ function ReportDownload({ token }) {
 
       const data = await res.json();
 
-      const blob = new Blob([data.content], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
+      const byteCharacters = atob(data.content);
+      const byteArray = new Uint8Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteArray[i] = byteCharacters.charCodeAt(i);
+      }
 
+      const blob = new Blob([byteArray], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = data.filename;
       a.click();
-
       window.URL.revokeObjectURL(url);
       setOpen(false);
     } catch (err) {
       console.error(err);
       alert("Error downloading report");
+    } finally {
+      setLoadingRange(null);
     }
   };
+
+  const RANGES = ["weekly", "monthly", "yearly"];
 
   return (
     <div className="report-dropdown">
       <button
-      className="download-icon-btn"
-      onClick={() => setOpen(!open)}
-      title="Download Report" >
-      <Download size={18} />
-    </button>
-
+        className="download-icon-btn"
+        onClick={() => setOpen(!open)}
+        title="Download Report"
+        disabled={loadingRange !== null}
+      >
+        <Download size={18} />
+      </button>
 
       {open && (
         <div className="dropdown-menu">
-          <div onClick={() => downloadReport("weekly")}>Weekly</div>
-          <div onClick={() => downloadReport("monthly")}>Monthly</div>
-          <div onClick={() => downloadReport("yearly")}>Yearly</div>
+          {RANGES.map((range) => (
+            <div
+              key={range}
+              onClick={() => loadingRange === null && downloadReport(range)}
+              style={{ opacity: loadingRange && loadingRange !== range ? 0.45 : 1 }}
+            >
+              {loadingRange === range
+                ? `⏳ Downloading...`
+                : range.charAt(0).toUpperCase() + range.slice(1)}
+            </div>
+          ))}
         </div>
       )}
     </div>

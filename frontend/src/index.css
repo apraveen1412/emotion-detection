@@ -1,21 +1,75 @@
-* {
-  box-sizing: border-box;
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --brand:          #4f46e5;
+  --brand-dark:     #4338ca;
+  --brand-light:    #eef2ff;
+  --surface:        #ffffff;
+  --bg:             #f4f5f7;
+  --border:         #e5e7eb;
+  --border-focus:   #6366f1;
+  --text-primary:   #111827;
+  --text-muted:     #6b7280;
+  --text-hint:      #9ca3af;
+  --danger:         #ef4444;
+  --danger-bg:      #fef2f2;
+  --danger-border:  #fca5a5;
+  --success:        #10b981;
+  --success-bg:     #ecfdf5;
+  --radius-sm:      6px;
+  --radius-md:      10px;
+  --radius-lg:      14px;
+  --shadow-sm:      0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:      0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg:      0 10px 30px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.04);
+  --transition:     0.18s ease;
+  --font:           'DM Sans', sans-serif;
+  --font-mono:      'DM Mono', monospace;
 }
+
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
 
 body {
-  margin: 0;
-  font-family:Arial, Helvetica, sans-serif;
-
-  background: #f7f7f8;
-
-  color: #1f2937;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
 }
 
+/* ── Page shell ── */
 .app-container {
   min-height: 100vh;
-
   display: flex;
   justify-content: center;
-
-  padding: 40px 20px;
+  align-items: flex-start;
+  padding: clamp(12px, 3vw, 40px) clamp(10px, 2.5vw, 20px);
 }
+
+/* ── Global inputs ── */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="time"],
+input[type="datetime-local"],
+select {
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  padding: 11px 14px;
+  font-size: 0.9375rem;
+  font-family: var(--font);
+  color: var(--text-primary);
+  background: var(--surface);
+  outline: none;
+  transition: border var(--transition), box-shadow var(--transition);
+}
+
+input:focus, select:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+}
+
+select { background-color: var(--surface); cursor: pointer; }
