@@ -10,7 +10,7 @@ myenv/
 .env
 
 # ML models
-
+backend/model/
 
 # database
 journal.db
