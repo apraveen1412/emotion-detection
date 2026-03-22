@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Download } from "lucide-react";
 import "./ReportDownload.css";
+import { API_BASE } from "../utils/api";
 
 function ReportDownload({ token }) {
   const [open, setOpen] = useState(false);
@@ -13,7 +14,7 @@ function ReportDownload({ token }) {
     setLoadingRange(range);
     try {
       const res = await fetch(
-        `http://localhost:8000/report/excel?range=${range}`,
+        `${API_BASE}/report/excel?range=${range}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

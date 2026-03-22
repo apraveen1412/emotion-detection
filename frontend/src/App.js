@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { API_BASE } from "./utils/api";
 import { Mic, Send, LogOut, Calendar, Settings, X, CheckCircle } from "lucide-react";
 import "./App.css";
 // encryptText removed - send plaintext; AI must read it before any encryption
@@ -92,7 +93,7 @@ function App() {
   /* -------------------- PROFILE / SETTINGS -------------------- */
   const fetchProfile = async () => {
     try {
-      const res = await fetch("http://localhost:8000/profile", { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${API_BASE}/profile`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         const data = await res.json();
         setProfile(data);
@@ -103,7 +104,7 @@ function App() {
   };
 
   const saveTimes = async () => {
-    const res = await fetch("http://localhost:8000/profile", {
+    const res = await fetch(`${API_BASE}/profile`, {
       method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ default_morning_time: morningTime, default_evening_time: eveningTime })
     });
@@ -113,7 +114,7 @@ function App() {
 
   const saveSecurityQuestion = async () => {
     if (!newAnswer) return setSettingsMsg("Answer cannot be empty.");
-    const res = await fetch("http://localhost:8000/profile/security-question", {
+    const res = await fetch(`${API_BASE}/profile/security-question`, {
       method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ question: selectedQuestion, answer: newAnswer })
     });
@@ -127,7 +128,7 @@ function App() {
 
   const verifyCurrentPassword = async () => {
     if (!currentPassword) return setSettingsMsg("Please enter your current password.");
-    const res = await fetch("http://localhost:8000/profile/verify-password", {
+    const res = await fetch(`${API_BASE}/profile/verify-password`, {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ password: currentPassword })
     });
@@ -142,7 +143,7 @@ function App() {
 
   const changePassword = async () => {
     if (!newPassword) return setSettingsMsg("Please enter a new password.");
-    const res = await fetch("http://localhost:8000/profile/password", {
+    const res = await fetch(`${API_BASE}/profile/password`, {
       method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ current_password: currentPassword, new_password: newPassword })
     });
@@ -160,7 +161,7 @@ function App() {
 
   const downloadAllData = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/report/excel?range=yearly`, {
+      const res = await fetch(`${API_BASE}/report/excel?range=yearly`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) throw new Error("Download failed");
@@ -188,7 +189,7 @@ function App() {
 
   const deleteAccount = async () => {
     if (!deletePassword) return setSettingsMsg("Please enter your password to confirm.");
-    const res = await fetch("http://localhost:8000/profile/account", {
+    const res = await fetch(`${API_BASE}/profile/account`, {
       method: "DELETE", 
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ password: deletePassword })
@@ -212,7 +213,7 @@ function App() {
     e.preventDefault(); setAuthError(""); setAuthSuccess("");
     try {
       if (authMode === "signup") {
-        const res = await fetch("http://localhost:8000/signup", {
+        const res = await fetch(`${API_BASE}/signup`, {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username: identifier, email: email, password: password }),
         });
@@ -221,7 +222,7 @@ function App() {
       const formData = new URLSearchParams();
       formData.append("username", identifier);
       formData.append("password", password);
-      const res = await fetch("http://localhost:8000/token", { method: "POST", body: formData });
+      const res = await fetch(`${API_BASE}/token`, { method: "POST", body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail);
       localStorage.setItem("token", data.access_token);
@@ -231,7 +232,7 @@ function App() {
 
   const getSecurityQuestion = async (e) => {
     e.preventDefault(); setAuthError(""); setAuthSuccess("");
-    const res = await fetch("http://localhost:8000/forgot-password/question", {
+    const res = await fetch(`${API_BASE}/forgot-password/question`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ identifier })
     });
@@ -243,7 +244,7 @@ function App() {
 
   const resetPassword = async (e) => {
     e.preventDefault(); setAuthError("");
-    const res = await fetch("http://localhost:8000/forgot-password/reset", {
+    const res = await fetch(`${API_BASE}/forgot-password/reset`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ identifier, answer: securityAnswer, new_password: resetNewPassword })
     });
@@ -255,7 +256,7 @@ function App() {
 
   /* -------------------- ANALYSIS -------------------- */
   const fetchTimeline = async () => {
-    const res = await fetch("http://localhost:8000/timeline", { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch(`${API_BASE}/timeline`, { headers: { Authorization: `Bearer ${token}` } });
     if (res.ok) setHistory(await res.json());
   };
 
@@ -267,7 +268,7 @@ function App() {
     } else {
       formData.append("text", text); // plaintext - backend AI analyzes this
     }
-    const url = audioBlob ? "http://localhost:8000/analyze-audio" : "http://localhost:8000/analyze-text";
+    const url = audioBlob ? `${API_BASE}/analyze-audio` : `${API_BASE}/analyze-text`;
     try {
       const res = await fetch(url, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData });
       if (res.status === 401) return logout();
@@ -293,7 +294,7 @@ function App() {
     setScheduleStatus("Scheduling...");
     const formattedSuggestion = `OBSERVATION:\n${result.suggestion.observation}\n\nINSIGHTS:\n${result.suggestion.insight}\n\nACTIONABLE STEP:\n${result.suggestion.action}`;
     const formData = new FormData(); formData.append("suggestion", formattedSuggestion); formData.append("scheduled_time", timeToSubmit);
-    const res = await fetch("http://localhost:8000/schedule-activity", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData });
+    const res = await fetch(`${API_BASE}/schedule-activity`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData });
     const data = await res.json();
     if (res.ok) { setScheduleStatus(`✅ ${data.message}`); setIsScheduled(true); } else { setScheduleStatus("❌ Failed to schedule"); }
   };

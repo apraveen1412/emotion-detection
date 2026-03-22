@@ -77,13 +77,13 @@ scheduler     = BackgroundScheduler()
 # AI MODEL — load threshold from model_meta.json
 # ==================================================
 
-MODEL_PATH = "./model"
+MODEL_PATH = os.getenv("MODEL_PATH", "praveen-1403/mindjounal-emotion-v2")
+from huggingface_hub import login
 
-# FIX: Load the auto-tuned threshold and canonical label list from the
-# model_meta.json saved by the training notebook (Cell 13).
-# Previously, EMOTION_THRESHOLD was hardcoded to 0.35, which was almost
-# certainly wrong and not derived from the actual trained model.
-# If model_meta.json doesn't exist yet (v1 model), fall back gracefully.
+hf_token = os.getenv("HF_TOKEN")
+if hf_token:
+    login(token=hf_token)
+
 _meta_path = os.path.join(MODEL_PATH, "model_meta.json")
 if os.path.exists(_meta_path):
     with open(_meta_path) as _f:
