@@ -60,11 +60,8 @@ if not SECRET_KEY:
 ALGORITHM                   = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
-# FIX: Read DATABASE_URL from .env so it can be changed for production
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./journal.db")
 
-# FIX: Load CORS origins from .env so production deployments work
-# In .env: ALLOWED_ORIGINS=https://yourapp.com,https://www.yourapp.com
 _raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000")
 ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",")]
 
@@ -73,9 +70,7 @@ pwd_context   = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 scheduler     = BackgroundScheduler()
 
-# ==================================================
 # AI MODEL — load threshold from model_meta.json
-# ==================================================
 
 MODEL_PATH = os.getenv("MODEL_PATH", "praveen-1403/mindjounal-emotion-v2")
 from huggingface_hub import login
@@ -105,9 +100,7 @@ emotion_model.eval()
 
 whisper_model = whisper.load_model("tiny")
 
-# ==================================================
 # DB INIT + CORRUPTED ROW CLEANUP
-# ==================================================
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
@@ -129,9 +122,7 @@ def cleanup_corrupted_entries():
         else:
             print("[Startup] Database clean.")
 
-# ==================================================
 # EMAIL UTILITY
-# ==================================================
 
 def send_email(to_address: str, subject: str, body: str):
     sender   = os.getenv("EMAIL_ADDRESS")
@@ -176,9 +167,7 @@ def send_automated_reports(range_type: str):
         except Exception as e:
             print(f"[Scheduler] Report failed for {user.email}: {e}")
 
-# ==================================================
 # AUTH HELPERS
-# ==================================================
 
 def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
@@ -210,9 +199,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
             raise HTTPException(status_code=401, detail="User not found")
         return user
 
-# ==================================================
 # LIFESPAN
-# ==================================================
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -233,9 +220,7 @@ async def lifespan(app: FastAPI):
     scheduler.shutdown()
     print("[Scheduler] Shut down.")
 
-# ==================================================
 # FASTAPI APP
-# ==================================================
 
 app = FastAPI(lifespan=lifespan)
 
@@ -248,16 +233,13 @@ app.add_middleware(
     allow_credentials=True,
 )
 
-# ==================================================
 # AUTH ENDPOINTS
-# ==================================================
 
 class UserCreate(BaseModel):
     username: str
     email: EmailStr
     password: str
 
-# FIX: Add input validation — reject empty username/password at the API layer
 @app.post("/signup")
 def signup(user: UserCreate):
     if not user.username.strip():
@@ -295,7 +277,7 @@ def login(form: OAuth2PasswordRequestForm = Depends()):
             "token_type": "bearer",
         }
 
-# ── Forgot password ───────────────────────────────────────────────────────────
+# Forgot password 
 
 class ForgotPasswordRequest(BaseModel):
     identifier: str
@@ -337,9 +319,7 @@ def reset_forgotten_password(req: ForgotPasswordReset):
         session.commit()
         return {"message": "Password successfully reset."}
 
-# ==================================================
 # PROFILE ENDPOINTS
-# ==================================================
 
 class ProfileUpdate(BaseModel):
     default_morning_time: str
@@ -369,7 +349,6 @@ def get_profile(user: User = Depends(get_current_user)):
         "has_security_question": bool(user.security_question),
     }
 
-# FIX: Validate time format before saving to prevent garbage data in DB
 def _validate_time(t: str, field: str):
     try:
         datetime.datetime.strptime(t, "%H:%M")
@@ -434,21 +413,14 @@ def delete_account(req: PasswordConfirm, user: User = Depends(get_current_user))
         session.commit()
     return {"message": "Account completely deleted."}
 
-# ==================================================
 # CORE ANALYSIS
-# ==================================================
 
-# FIX: Add input length guard — the transformer tokenizer silently truncates
-# at MAX_LENGTH=128 tokens. Very long inputs (>2000 chars) waste compute and
-# can skew multi-sentence analysis. Reject clearly abusive inputs early.
 MAX_INPUT_CHARS = 2000
 
 def analyze_and_store(text: str, date: str, user: User):
-    # FIX: Validate that text is not empty or whitespace-only
     if not text or not text.strip():
         raise HTTPException(400, "Journal text cannot be empty.")
 
-    # FIX: Input length guard
     if len(text) > MAX_INPUT_CHARS:
         raise HTTPException(
             400,
@@ -486,18 +458,11 @@ def analyze_and_store(text: str, date: str, user: User):
     active_emotions.sort(key=lambda e: max_scores[e], reverse=True)
     requires_schedule = any(emo in NEGATIVE_EMOTIONS for emo in active_emotions)
 
-    # FIX: Validate date string before parsing to give a clean error
     try:
         entry_date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
     except ValueError:
         raise HTTPException(400, "Invalid date format — use YYYY-MM-DD.")
 
-    # FIX: encrypted_content is now Optional in the model so this INSERT
-    # no longer raises a DB integrity error. The field is intentionally
-    # left None here — the encryption bug (frontend encrypts before sending,
-    # which breaks the AI model) must be fixed on the frontend side:
-    # the frontend should send plaintext for analysis and the backend
-    # should encrypt before storage. That frontend fix is a separate task.
     with Session(engine) as session:
         session.add(JournalEntry(
             user_id          = user.id,
@@ -521,9 +486,7 @@ def analyze_and_store(text: str, date: str, user: User):
     )
     return active_emotions, suggestion_dict, requires_schedule
 
-# ==================================================
 # ANALYSIS ENDPOINTS
-# ==================================================
 
 @app.post("/analyze-text")
 def analyze_text(
@@ -531,11 +494,6 @@ def analyze_text(
     date: str  = Form(...),
     user: User = Depends(get_current_user),
 ):
-    # FIX: The frontend was encrypting text with AES-GCM before sending,
-    # which caused the transformer model to receive base64 ciphertext instead
-    # of readable text — making emotion detection silently broken for all text
-    # entries. The frontend encryption call must be removed (or moved to
-    # post-analysis). This endpoint now receives and processes plaintext.
     emotions, suggestion_dict, requires_schedule = analyze_and_store(text, date, user)
     return {
         "emotions":            emotions,
@@ -550,7 +508,6 @@ def analyze_audio(
     date: str        = Form(...),
     user: User       = Depends(get_current_user),
 ):
-    # FIX: Validate that the uploaded file is an audio file
     allowed_audio_types = {
         "audio/webm", "audio/wav", "audio/mpeg",
         "audio/ogg", "audio/mp4", "audio/x-m4a"
@@ -565,7 +522,6 @@ def analyze_audio(
     try:
         text = whisper_model.transcribe(path)["text"]
     finally:
-        # FIX: Ensure temp file is always deleted even if transcription fails
         os.remove(path)
 
     if not text or not text.strip():
@@ -580,9 +536,7 @@ def analyze_audio(
         "requires_scheduling": requires_schedule,
     }
 
-# ==================================================
 # SCHEDULE ACTIVITY
-# ==================================================
 
 @app.post("/schedule-activity")
 def schedule_activity(
@@ -593,7 +547,6 @@ def schedule_activity(
     now = datetime.datetime.now()
 
     if scheduled_time == "auto":
-        # FIX: Validate time format from DB before splitting
         try:
             m_hour, m_min = map(int, user.default_morning_time.split(":"))
             e_hour, e_min = map(int, user.default_evening_time.split(":"))
@@ -630,7 +583,6 @@ def schedule_activity(
             dt,
         )
     except Exception as e:
-        # FIX: Log but don't crash — calendar is optional, email is the primary delivery
         print(f"[Calendar] Event creation failed (non-fatal): {e}")
 
     email_body = (
@@ -653,11 +605,7 @@ def schedule_activity(
 
     return {"message": f"Activity scheduled for {dt.strftime('%I:%M %p on %b %d')}"}
 
-# ==================================================
 # TIMELINE
-# FIX: Was duplicating the logic from emotion_analytics.py inline.
-# Now delegates to the service function.
-# ==================================================
 
 @app.get("/timeline")
 def timeline(days: int = 90, user: User = Depends(get_current_user)):
@@ -666,11 +614,7 @@ def timeline(days: int = 90, user: User = Depends(get_current_user)):
         raise HTTPException(400, "days must be between 1 and 3650.")
     return get_emotion_timeline(user.id, days, engine)
 
-# ==================================================
 # EMOTION COUNTS (bar chart)
-# FIX: Was duplicating the logic from emotion_analytics.py inline.
-# Now delegates to the service function.
-# ==================================================
 
 @app.get("/emotion-counts")
 def emotion_counts(days: int = 30, user: User = Depends(get_current_user)):
@@ -678,11 +622,8 @@ def emotion_counts(days: int = 30, user: User = Depends(get_current_user)):
         raise HTTPException(400, "days must be between 1 and 3650.")
     return get_emotion_counts(user.id, days, VALID_EMOTIONS, engine)
 
-# ==================================================
 # REPORT ENDPOINTS
-# ==================================================
 
-# FIX: Validate the range parameter before passing to report generator
 VALID_RANGES = {"weekly", "monthly", "yearly"}
 
 @app.get("/report/csv")
