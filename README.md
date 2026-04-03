@@ -127,7 +127,7 @@ This project uses **Google Calendar API** for creating reminders.
 4. Go to **Audience**
 5. Under **Test Users**, add your Gmail ID
 
-⚠️ **Important Notes**
+ **Important Notes**
 
 - Do NOT delete `backend/auth/token.json`
 - Calendar events are created automatically after first login
